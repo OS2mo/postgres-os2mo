@@ -34,11 +34,19 @@ psql -v ON_ERROR_STOP=1 -d $DB_NAME <<-EOSQL2
     create extension if not exists "pg_trgm" with schema actual_state;
 EOSQL2
 
-echo Updating $DB_USER to superuser
+if [ -n "$DB_UPGRADE_TO_SUPERUSER" ]; then
+    true "${DB_USER:?DB_USER is unset. Error.}"
 
-psql -v ON_ERROR_STOP=1 <<-EOSQL3
-    ALTER ROLE $DB_USER WITH SUPERUSER;
+    echo
+    echo Warning: Upgrading $DB_USER to SUPERUSER.
+    echo
+
+    psql -v ON_ERROR_STOP=1 <<-EOSQL3
+        ALTER ROLE $DB_USER WITH SUPERUSER;
 EOSQL3
+else
+    echo Skipping upgrade to SUPERUSER.
+fi
 
 
 # we can connect without password because ``trust`` authentication for Unix
