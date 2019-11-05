@@ -9,7 +9,9 @@ true "${DB_NAME:?DB_NAME is unset. Error.}"
 # should be identical the ones in oio_rest/oio_rest/db/management.py used for
 # tests.
 
-psql -v ON_ERROR_STOP=1 <<-EOSQL
+echo Create $DB_NAME
+
+psql -v ON_ERROR_STOP=1 <<-EOSQL1
     create user $DB_USER with encrypted password '$DB_PASSWORD';
     create database $DB_NAME;
     grant all privileges on database $DB_NAME to $DB_USER;
@@ -18,7 +20,26 @@ psql -v ON_ERROR_STOP=1 <<-EOSQL
     alter database $DB_NAME set intervalstyle to 'sql_standard';
     \connect $DB_NAME
     create schema actual_state authorization $DB_USER;
-EOSQL
+EOSQL1
+
+
+echo Adding extensions
+
+# The three following `create extension … ` commands should be identical the
+# ones in oio_rest/oio_rest/db/management.py used for tests.
+
+psql -v ON_ERROR_STOP=1 -d $DB_NAME <<-EOSQL2
+    create extension if not exists "uuid-ossp" with schema actual_state;
+    create extension if not exists "btree_gist" with schema actual_state;
+    create extension if not exists "pg_trgm" with schema actual_state;
+EOSQL2
+
+echo Updating $DB_USER to superuser
+
+psql -v ON_ERROR_STOP=1 <<-EOSQL3
+    ALTER ROLE $DB_USER WITH SUPERUSER;
+EOSQL3
+
 
 # we can connect without password because ``trust`` authentication for Unix
 # sockets is enabled inside the container.
