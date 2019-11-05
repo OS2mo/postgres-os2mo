@@ -13,6 +13,17 @@ if [ -n "$CONF_DB_NAME" ]; then
         create database $CONF_DB_NAME owner $CONF_DB_USER;
         grant all privileges on database $CONF_DB_NAME to $CONF_DB_USER;
 EOSQL
+    if [ -n "$CONF_DB_UPGRADE_TO_SUPERUSER" ]; then
+        echo
+        echo Warning: Upgrading $CONF_DB_USER to SUPERUSER.
+        echo
+
+        psql -v ON_ERROR_STOP=1 <<-EOSQL3
+            ALTER ROLE $CONF_DB_USER WITH SUPERUSER;
+EOSQL3
+    else
+        echo Skipping upgrading $CONF_DB_USER to SUPERUSER.
+    fi
 else
     echo Skipping creation of config db
 fi

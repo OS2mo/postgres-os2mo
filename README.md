@@ -21,6 +21,7 @@ For the database containing OS2mo configuration:
 CONF_DB_NAME
 CONF_DB_USER
 CONF_DB_PASSWORD
+CONF_DB_UPGRADE_TO_SUPERUSER
 ```
 
 For the database containing LoRA and OS2mo user sessions:

@@ -36,8 +36,6 @@ EOSQL1
 EOSQL2
 
     if [ -n "$DB_UPGRADE_TO_SUPERUSER" ]; then
-        true "${DB_USER:?DB_USER is unset. Error.}"
-
         echo
         echo Warning: Upgrading $DB_USER to SUPERUSER.
         echo
@@ -46,7 +44,7 @@ EOSQL2
             ALTER ROLE $DB_USER WITH SUPERUSER;
 EOSQL3
     else
-        echo Skipping upgrade to SUPERUSER.
+        echo Skipping upgradeing $DB_USER to SUPERUSER.
     fi
 else
     echo Skipping creation of LoRA data db
