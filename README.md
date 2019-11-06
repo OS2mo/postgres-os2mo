@@ -7,13 +7,24 @@ image](https://hub.docker.com/_/postgres) and does two additional things:
    * creates three databases objects if the envionment variabel `*_NAME` for each
 of them are set.
 
-### Environment variables
+
+## Variants
+There are two variants of this image.
+### `postgres-os2mo:<pg_version>-<revision>`
+Suitable for production.
+
+### `postgres-os2mo:<pg_version>-<revision>-test`
+Suitable integration tests where
+    * the LoRA OIO data and OS2mo configuration users are upgrades to SUPERUSER and
+    * pgTAP is installed.
+
+
+## Environment variables
 For the database containing LoRA OIO data.
 ```
 DB_NAME
 DB_USER
 DB_PASSWORD
-DB_UPGRADE_TO_SUPERUSER
 ```
 
 For the database containing OS2mo configuration:
@@ -21,7 +32,6 @@ For the database containing OS2mo configuration:
 CONF_DB_NAME
 CONF_DB_USER
 CONF_DB_PASSWORD
-CONF_DB_UPGRADE_TO_SUPERUSER
 ```
 
 For the database containing LoRA and OS2mo user sessions:

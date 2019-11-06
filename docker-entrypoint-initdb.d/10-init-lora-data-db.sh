@@ -35,17 +35,6 @@ EOSQL1
         create extension if not exists "pg_trgm" with schema actual_state;
 EOSQL2
 
-    if [ -n "$DB_UPGRADE_TO_SUPERUSER" ]; then
-        echo
-        echo Warning: Upgrading $DB_USER to SUPERUSER.
-        echo
-
-        psql -v ON_ERROR_STOP=1 <<-EOSQL3
-            ALTER ROLE $DB_USER WITH SUPERUSER;
-EOSQL3
-    else
-        echo Skipping upgradeing $DB_USER to SUPERUSER.
-    fi
 else
     echo Skipping creation of LoRA data db
 fi
