@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* Turn `enable_hashagg` and `enable_sort` off for LoRa data db
 * Add changelog
 * Documentation fixup
 
