@@ -27,6 +27,8 @@ COPY docker-entrypoint-initdb.d/10-init-lora-data-db.sh docker-entrypoint-initdb
 COPY docker-entrypoint-initdb.d/20-init-conf-db.sh docker-entrypoint-initdb.d/20-init-conf-db.sh
 COPY docker-entrypoint-initdb.d/30-init-sessions-db.sh docker-entrypoint-initdb.d/30-init-sessions-db.sh
 
+EXPOSE 5432
+
 
 FROM production as test
 
@@ -38,3 +40,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY docker-entrypoint-initdb.d/15-upgrade-su-lora-data-db.sh docker-entrypoint-initdb.d/15-upgrade-su-lora-data-db.sh
 COPY docker-entrypoint-initdb.d/25-upgrade-su-conf-db.sh docker-entrypoint-initdb.d/25-upgrade-su-conf-db.sh
+
+EXPOSE 5432
