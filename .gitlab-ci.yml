@@ -1,7 +1,105 @@
-# The configuration of CI is at https://git.magenta.dk/labs/master-ci. All
-# changes should be made there.
+# Copyright (C) 2020 Magenta ApS, http://magenta.dk.
+# Contact: info@magenta.dk.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+################################################################################
+# Changes to this file requires approval from Labs. Please add a person from   #
+# Labs as required approval to your MR if you have any changes.                #
+################################################################################
+
+# For `docker push` to work, the following envionment variables have to set in
+# the Gitlab UI.
+# RELEASE_REGISTRY_USER
+# RELEASE_REGISTRY_PASSWORD
+
+stages:
+  - lint-build
+  - test
+  - release
+  - deploy
 
 include:
   - project: 'labs/master-ci'
     ref: master
-    file: '/project/postgres-os2mo.yml'
+    file: '/project/docker.yml'
+
+variables:
+  # Project variables
+  RELEASE_REGISTRY: docker.io
+  RELEASE_REGISTRY_IMAGE: index.docker.io/magentaaps/postgres-os2mo
+
+  IMAGE_SHA: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}
+  IMAGE_DEV: ${CI_REGISTRY_IMAGE}:dev
+
+  IMAGE: magentaaps/postgres-os2mo
+  IMAGE_TAG: ${IMAGE}:${CI_COMMIT_TAG}
+  IMAGE_LATEST: ${IMAGE}:latest
+
+
+# Build stage
+#############
+
+build:
+  stage: lint-build
+  tags:
+    - docker
+    - privileged
+  before_script:
+    # Login to GitLab registry
+    - echo ${CI_REGISTRY_PASSWORD} | docker login -u ${CI_REGISTRY_USER} --password-stdin ${CI_REGISTRY}
+    - docker pull ${IMAGE_DEV} || true
+  script:
+    - docker build --pull --target production --tag ${IMAGE_SHA} --cache-from ${IMAGE_DEV} .
+    - docker build --pull --target test --tag ${IMAGE_SHA}-test --cache-from ${IMAGE_DEV}-test .
+    - docker push ${IMAGE_SHA}
+    - docker push ${IMAGE_SHA}-test
+
+
+# Release stage
+###############
+
+.release-default: &release-default
+  stage: release
+  variables:
+    GIT_STRATEGY: none # We do not need the source code
+  tags:
+    - docker
+    - privileged
+  before_script:
+    # Login to GitLab registry
+    - echo ${CI_REGISTRY_PASSWORD} | docker login -u ${CI_REGISTRY_USER} --password-stdin ${CI_REGISTRY}
+    - docker pull ${IMAGE_SHA}
+    - docker pull ${IMAGE_SHA}-test
+
+
+release-dev:
+  <<: *release-default
+  only:
+    - /develop/
+  script:
+    - docker tag ${IMAGE_SHA} ${IMAGE_DEV}
+    - docker tag ${IMAGE_SHA}-test ${IMAGE_DEV}-test
+    - docker push ${IMAGE_DEV}
+    - docker push ${IMAGE_DEV}-test
+
+
+release-master:
+  <<: *release-default
+  only:
+    - tags
+  script:
+    # Login to Docker Hub registry
+    - echo ${RELEASE_REGISTRY_PASSWORD} | docker login -u ${RELEASE_REGISTRY_USER} --password-stdin ${RELEASE_REGISTRY}
+    - echo Tagging with ${IMAGE_TAG}
+    - docker tag ${IMAGE_SHA} ${IMAGE_TAG}
+    - docker tag ${IMAGE_SHA}-test ${IMAGE_TAG}-test
+    - echo Tagging with ${IMAGE_LATEST}
+    - docker tag ${IMAGE_SHA} ${IMAGE_LATEST}
+    - docker tag ${IMAGE_SHA}-test ${IMAGE_LATEST}-test
+    - docker push ${IMAGE_TAG}
+    - docker push ${IMAGE_TAG}-test
+    - docker push ${IMAGE_LATEST}
+    - docker push ${IMAGE_LATEST}-test
