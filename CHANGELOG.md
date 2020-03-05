@@ -2,6 +2,9 @@
 
 ## Unreleased
 * Change CI docker builder to kaniko
+* Add missing changelog for `9.6.15-3`
+
+## `9.6.15-3` 2019-12-19
 * Add changelog
 * Documentation fixup
 
