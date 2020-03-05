@@ -10,10 +10,10 @@ of them are set.
 
 ## Variants
 There are two variants of this image.
-### `postgres-os2mo:<pg_version>-<revision>`
+### `postgres-os2mo:<revision>-<pg_version>`
 Suitable for production.
 
-### `postgres-os2mo:<pg_version>-<revision>-test`
+### `postgres-os2mo:<revision>-<pg_version>-test`
 Suitable integration tests where:
 * the LoRa OIO data and OS2mo configuration users are upgrades to SUPERUSER and
 * pgTAP is installed.
