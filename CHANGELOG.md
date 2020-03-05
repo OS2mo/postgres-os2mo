@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## Revision `10` 2020-03-05
 * Change CI docker builder to kaniko
 * Add missing changelog for `9.6.15-3`
 * Change version numbering from `<pg_version>-<revision>` to
@@ -8,6 +8,9 @@
 * Add multiple parallel released versions of postgres and remove support for
   `:latest`-tags
 * Remove unused `:dev`-tags builds
+
+## Rev 4-9 skipped
+For correct sorting with old version numbers.
 
 ## `9.6.15-3` 2019-12-19
 * Add changelog
