@@ -31,12 +31,10 @@ variables:
   # and `/test`. The difference between the two images when released to Docker
   # Hub is the the suffix to *tag* of `` and `-test`.
   PROD_IMAGE_SHA: ${CI_REGISTRY_IMAGE}/prod:${CI_COMMIT_SHA}
-  PROD_IMAGE_DEV: ${CI_REGISTRY_IMAGE}/prod:dev
   PROD_IMAGE_TAG: ${RELEASE_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
   PROD_IMAGE_LATEST: ${RELEASE_REGISTRY_IMAGE}:latest
 
   TEST_IMAGE_SHA: ${CI_REGISTRY_IMAGE}/test:${CI_COMMIT_SHA}
-  TEST_IMAGE_DEV: ${CI_REGISTRY_IMAGE}/test:dev
   TEST_IMAGE_TAG: ${RELEASE_REGISTRY_IMAGE}:${CI_COMMIT_TAG}-test
   TEST_IMAGE_LATEST: ${RELEASE_REGISTRY_IMAGE}:latest-test
 
@@ -86,23 +84,6 @@ build_test:
     - docker
   before_script:
     - apk add skopeo
-
-
-release-prod-dev:
-  extends: .release-default
-  rules:
-    - if: $CI_COMMIT_REF_NAME == "develop"
-  script:
-    - skopeo copy
-      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
-      --dest-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
-      "docker://${PROD_IMAGE_SHA}"
-      "docker://${PROD_IMAGE_DEV}"
-    - skopeo copy
-      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
-      --dest-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
-      "docker://${TEST_IMAGE_SHA}"
-      "docker://${TEST_IMAGE_DEV}"
 
 release-master:
   extends: .release-default
