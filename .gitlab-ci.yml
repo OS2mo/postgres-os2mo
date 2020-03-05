@@ -21,85 +21,111 @@ stages:
   - release
   - deploy
 
-include:
-  - project: 'labs/master-ci'
-    ref: master
-    file: '/project/docker.yml'
-
 variables:
   # Project variables
   RELEASE_REGISTRY: docker.io
   RELEASE_REGISTRY_IMAGE: index.docker.io/magentaaps/postgres-os2mo
 
-  IMAGE_SHA: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}
-  IMAGE_DEV: ${CI_REGISTRY_IMAGE}:dev
+  # Attention. The difference between production images and test images for the
+  # temporary git.magenta.dk registries is the suffix to the *path*, of `/prod`
+  # and `/test`. The difference between the two images when released to Docker
+  # Hub is the the suffix to *tag* of `` and `-test`.
+  PROD_IMAGE_SHA: ${CI_REGISTRY_IMAGE}/prod:${CI_COMMIT_SHA}
+  PROD_IMAGE_DEV: ${CI_REGISTRY_IMAGE}/prod:dev
+  PROD_IMAGE_TAG: ${RELEASE_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+  PROD_IMAGE_LATEST: ${RELEASE_REGISTRY_IMAGE}:latest
 
-  IMAGE: magentaaps/postgres-os2mo
-  IMAGE_TAG: ${IMAGE}:${CI_COMMIT_TAG}
-  IMAGE_LATEST: ${IMAGE}:latest
-
+  TEST_IMAGE_SHA: ${CI_REGISTRY_IMAGE}/test:${CI_COMMIT_SHA}
+  TEST_IMAGE_DEV: ${CI_REGISTRY_IMAGE}/test:dev
+  TEST_IMAGE_TAG: ${RELEASE_REGISTRY_IMAGE}:${CI_COMMIT_TAG}-test
+  TEST_IMAGE_LATEST: ${RELEASE_REGISTRY_IMAGE}:latest-test
 
 # Build stage
 #############
 
-build:
+.build_docker_base:
   stage: lint-build
+  image:
+    # We use the `:debug` image as it contains `sh` needed by gitlab-ci.
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   tags:
     - docker
-    - privileged
-  before_script:
-    # Login to GitLab registry
-    - echo ${CI_REGISTRY_PASSWORD} | docker login -u ${CI_REGISTRY_USER} --password-stdin ${CI_REGISTRY}
-    - docker pull ${IMAGE_DEV} || true
   script:
-    - docker build --pull --target production --tag ${IMAGE_SHA} --cache-from ${IMAGE_DEV} .
-    - docker build --pull --target test --tag ${IMAGE_SHA}-test --cache-from ${IMAGE_DEV}-test .
-    - docker push ${IMAGE_SHA}
-    - docker push ${IMAGE_SHA}-test
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - cat /kaniko/.docker/config.json
+    - /kaniko/executor
+      --context=${CI_PROJECT_DIR}
+      --dockerfile=${CI_PROJECT_DIR}/docker/Dockerfile
+      --target=${TARGET}
+      --destination=${IMAGE}
+      --cache=true
 
+
+build_prod:
+  extends: .build_docker_base
+  before_script:
+    - export TARGET="production"
+    - export IMAGE="${PROD_IMAGE_SHA}"
+
+build_test:
+  extends: .build_docker_base
+  before_script:
+    - export TARGET="test"
+    - export IMAGE="${TEST_IMAGE_SHA}"
 
 # Release stage
 ###############
 
-.release-default: &release-default
+.release-default:
   stage: release
+  image: alpine
   variables:
     GIT_STRATEGY: none # We do not need the source code
   tags:
     - docker
-    - privileged
   before_script:
-    # Login to GitLab registry
-    - echo ${CI_REGISTRY_PASSWORD} | docker login -u ${CI_REGISTRY_USER} --password-stdin ${CI_REGISTRY}
-    - docker pull ${IMAGE_SHA}
-    - docker pull ${IMAGE_SHA}-test
+    - apk add skopeo
 
 
-release-dev:
-  <<: *release-default
-  only:
-    - /develop/
+release-prod-dev:
+  extends: .release-default
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "develop"
   script:
-    - docker tag ${IMAGE_SHA} ${IMAGE_DEV}
-    - docker tag ${IMAGE_SHA}-test ${IMAGE_DEV}-test
-    - docker push ${IMAGE_DEV}
-    - docker push ${IMAGE_DEV}-test
-
+    - skopeo copy
+      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      --dest-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      "docker://${PROD_IMAGE_SHA}"
+      "docker://${PROD_IMAGE_DEV}"
+    - skopeo copy
+      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      --dest-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      "docker://${TEST_IMAGE_SHA}"
+      "docker://${TEST_IMAGE_DEV}"
 
 release-master:
-  <<: *release-default
-  only:
-    - tags
+  extends: .release-default
+  rules:
+    - if: $CI_COMMIT_TAG
   script:
-    # Login to Docker Hub registry
-    - echo ${RELEASE_REGISTRY_PASSWORD} | docker login -u ${RELEASE_REGISTRY_USER} --password-stdin ${RELEASE_REGISTRY}
-    - echo Tagging with ${IMAGE_TAG}
-    - docker tag ${IMAGE_SHA} ${IMAGE_TAG}
-    - docker tag ${IMAGE_SHA}-test ${IMAGE_TAG}-test
-    - echo Tagging with ${IMAGE_LATEST}
-    - docker tag ${IMAGE_SHA} ${IMAGE_LATEST}
-    - docker tag ${IMAGE_SHA}-test ${IMAGE_LATEST}-test
-    - docker push ${IMAGE_TAG}
-    - docker push ${IMAGE_TAG}-test
-    - docker push ${IMAGE_LATEST}
-    - docker push ${IMAGE_LATEST}-test
+    - skopeo copy
+      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      --dest-creds=${RELEASE_REGISTRY_USER}:${RELEASE_REGISTRY_PASSWORD}
+      "docker://${PROD_IMAGE_SHA}"
+      "docker://${PROD_IMAGE_TAG}"
+    - skopeo copy
+      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      --dest-creds=${RELEASE_REGISTRY_USER}:${RELEASE_REGISTRY_PASSWORD}
+      "docker://${PROD_IMAGE_SHA}"
+      "docker://${PROD_IMAGE_LATEST}"
+    - skopeo copy
+      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      --dest-creds=${RELEASE_REGISTRY_USER}:${RELEASE_REGISTRY_PASSWORD}
+      "docker://${TEST_IMAGE_SHA}"
+      "docker://${TEST_IMAGE_TAG}"
+    - skopeo copy
+      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      --dest-creds=${RELEASE_REGISTRY_USER}:${RELEASE_REGISTRY_PASSWORD}
+      "docker://${TEST_IMAGE_SHA}"
+      "docker://${TEST_IMAGE_LATEST}"

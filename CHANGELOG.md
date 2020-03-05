@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+* Change CI docker builder to kaniko
 * Add changelog
 * Documentation fixup
 
