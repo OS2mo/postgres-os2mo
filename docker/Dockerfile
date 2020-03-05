@@ -1,4 +1,6 @@
-FROM postgres:9.6.15 as production
+ARG POSTGRES_VERSION
+
+FROM postgres:${POSTGRES_VERSION} as production
 
 LABEL org.opencontainers.image.title="Postgres OS2mo" \
   org.opencontainers.image.description="A docker image containing postgres and the extensions LoRA and OS2mo needs." \
