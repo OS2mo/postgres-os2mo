@@ -1,4 +1,7 @@
 # Changelog
+## Revision `11` 2020-12-03
+
+* Automatically update password on database on startup if changed
 
 ## Revision `10` 2020-03-05
 * Change CI docker builder to kaniko
