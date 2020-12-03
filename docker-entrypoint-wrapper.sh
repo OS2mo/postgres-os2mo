@@ -26,4 +26,11 @@ if [ "$1" = 'postgres' ]; then
     fi
 fi
 
+# if the database is already created, update the passwords according to environment variables
+# only run if database is initialized
+source docker-entrypoint.sh
+docker_setup_env
+if [ -n "$DATABASE_ALREADY_EXISTS" ]; then
+    gosu postgres /update_passwords.sh
+fi
 exec docker-entrypoint.sh "$@"

@@ -19,6 +19,7 @@ LABEL org.opencontainers.image.title="Postgres OS2mo" \
 RUN apt-get update && apt-get install -y --no-install-recommends \
   pwgen \
   && rm -rf /var/lib/apt/lists/*
+COPY update_passwords.sh /update_passwords.sh
 COPY docker-entrypoint-wrapper.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint-wrapper.sh"]
 # CMD is reset when we overwrite the ENTRYPOINT. We set it here again.
