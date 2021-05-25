@@ -16,6 +16,7 @@ LABEL org.opencontainers.image.title="Postgres OS2mo" \
 # is fixed upstream.
 #
 # The workaround is to install pwgen and wrap docker-entrypoint.sh.
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
   pwgen \
   && rm -rf /var/lib/apt/lists/*
@@ -35,6 +36,7 @@ FROM production as test
 
 LABEL org.opencontainers.image.title="Postgres OS2mo test"
 
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
   "postgresql-$PG_MAJOR-pgtap" \
   && rm -rf /var/lib/apt/lists/*
