@@ -26,9 +26,9 @@ ENTRYPOINT ["docker-entrypoint-wrapper.sh"]
 CMD ["postgres"]
 # End of workaround
 
-COPY docker-entrypoint-initdb.d/10-init-lora-data-db.sh docker-entrypoint-initdb.d/10-init-lora-data-db.sh
-COPY docker-entrypoint-initdb.d/20-init-conf-db.sh docker-entrypoint-initdb.d/20-init-conf-db.sh
-COPY docker-entrypoint-initdb.d/30-init-sessions-db.sh docker-entrypoint-initdb.d/30-init-sessions-db.sh
+COPY docker-entrypoint-initdb.d/10-init-lora-data-db.sh /docker-entrypoint-initdb.d/10-init-lora-data-db.sh
+COPY docker-entrypoint-initdb.d/20-init-conf-db.sh /docker-entrypoint-initdb.d/20-init-conf-db.sh
+COPY docker-entrypoint-initdb.d/30-init-sessions-db.sh /docker-entrypoint-initdb.d/30-init-sessions-db.sh
 
 
 FROM production as test
@@ -39,5 +39,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   postgresql-$PG_MAJOR-pgtap \
   && rm -rf /var/lib/apt/lists/*
 
-COPY docker-entrypoint-initdb.d/15-upgrade-su-lora-data-db.sh docker-entrypoint-initdb.d/15-upgrade-su-lora-data-db.sh
-COPY docker-entrypoint-initdb.d/25-upgrade-su-conf-db.sh docker-entrypoint-initdb.d/25-upgrade-su-conf-db.sh
+COPY docker-entrypoint-initdb.d/15-upgrade-su-lora-data-db.sh /docker-entrypoint-initdb.d/15-upgrade-su-lora-data-db.sh
+COPY docker-entrypoint-initdb.d/25-upgrade-su-conf-db.sh /docker-entrypoint-initdb.d/25-upgrade-su-conf-db.sh
