@@ -71,13 +71,12 @@ Lint Dockerfile:
       --cache=true
       '
 
-
-build_prod:
+Build production image:
   extends: .build_docker_base
   before_script:
     - export TARGET="production"
 
-build_test:
+Build test image:
   extends: .build_docker_base
   before_script:
     - export TARGET="test"
@@ -95,7 +94,7 @@ build_test:
   before_script:
     - apk add skopeo
 
-release-master:
+Release master:
   extends: .release-default
   rules:
     - if: $CI_COMMIT_TAG
