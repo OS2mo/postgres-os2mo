@@ -36,6 +36,7 @@ variables:
 Lint Dockerfile:
   stage: lint-build
   image: hadolint/hadolint:latest-alpine
+  needs: []
   before_script:
     - apk add fd
   script:
@@ -52,6 +53,7 @@ Lint Dockerfile:
 
 .build_docker_base:
   stage: lint-build
+  needs: []
   image:
     # We use the `:debug` image as it contains `sh` needed by gitlab-ci.
     name: gcr.io/kaniko-project/executor:debug
@@ -86,6 +88,10 @@ Build test image:
 
 .release-default:
   stage: release
+  needs:
+    - Lint Dockerfile
+    - Build production image
+    - Build test image
   image: alpine
   variables:
     GIT_STRATEGY: none # We do not need the source code
