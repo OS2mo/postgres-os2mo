@@ -30,11 +30,30 @@ variables:
   IMAGE_TAG_BASE: ${RELEASE_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
 
 
+# Lint stage
+############
+
+Lint Dockerfile:
+  stage: lint-build
+  image: hadolint/hadolint:latest-alpine
+  needs: []
+  before_script:
+    - apk add fd
+  script:
+    - echo "Running Hadolint, a Dockerfile linter"
+    - echo "For more information about reported errors, visit the Hadolint wiki on https://github.com/hadolint/hadolint/wiki"
+    # Run fd without exec arg to produce a list of files to be linted
+    - fd Dockerfile
+    # Run hadolint on every Dockerfile
+    - fd Dockerfile --exec hadolint
+
+
 # Build stage
 #############
 
 .build_docker_base:
   stage: lint-build
+  needs: []
   image:
     # We use the `:debug` image as it contains `sh` needed by gitlab-ci.
     name: gcr.io/kaniko-project/executor:debug
@@ -54,13 +73,12 @@ variables:
       --cache=true
       '
 
-
-build_prod:
+Build production image:
   extends: .build_docker_base
   before_script:
     - export TARGET="production"
 
-build_test:
+Build test image:
   extends: .build_docker_base
   before_script:
     - export TARGET="test"
@@ -70,6 +88,10 @@ build_test:
 
 .release-default:
   stage: release
+  needs:
+    - Lint Dockerfile
+    - Build production image
+    - Build test image
   image: alpine
   variables:
     GIT_STRATEGY: none # We do not need the source code
@@ -78,7 +100,7 @@ build_test:
   before_script:
     - apk add skopeo
 
-release-master:
+Release master:
   extends: .release-default
   rules:
     - if: $CI_COMMIT_TAG
