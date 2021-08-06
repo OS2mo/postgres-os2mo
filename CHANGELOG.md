@@ -1,4 +1,8 @@
 # Changelog
+## Revision `12` 2021-05-31
+
+* Rework from postgres container to init container
+
 ## Revision `11` 2020-12-03
 
 * Automatically update password on database on startup if changed
