@@ -93,8 +93,6 @@ Build test image:
     - Build production image
     - Build test image
   image: alpine
-  variables:
-    GIT_STRATEGY: none # We do not need the source code
   tags:
     - docker
   before_script:
