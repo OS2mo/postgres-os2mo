@@ -19,7 +19,7 @@ setup_lora_db() {
         psql ${PSQL_ARGS} --dbname=postgres -c "CREATE USER ${DB_USER} WITH ENCRYPTED PASSWORD '${DB_PASSWORD}';"
     fi
     echo ""
-    psql ${PSQL_ARGS} --dbname=postgres -c "GRANT ${DB_USER} TO postgres;"
+    psql ${PSQL_ARGS} --dbname=postgres -c "GRANT ${DB_USER} TO ${POSTGRES_USER};"
 
     echo "Ensure LoRa database exists"
     if ! check_db_exists ${DB_NAME}; then
