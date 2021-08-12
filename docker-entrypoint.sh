@@ -19,7 +19,6 @@ PSQL_ARGS=''
 PSQL_ARGS="${PSQL_ARGS} --host=${POSTGRES_HOST}"
 PSQL_ARGS="${PSQL_ARGS} --port=${POSTGRES_PORT}"
 PSQL_ARGS="${PSQL_ARGS} --username=${POSTGRES_USER}"
-# PSQL_ARGS="${PSQL_ARGS} --dbname postgres"
 PSQL_ARGS="${PSQL_ARGS} -v ON_ERROR_STOP=1"
 if [ -n "${POSTGRES_SSL}" ]; then
     PSQL_ARGS="${PSQL_ARGS} --set=sslmode=${POSTGRES_SSL}"
