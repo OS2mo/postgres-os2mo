@@ -14,7 +14,7 @@ setup_keycloak_db() {
         psql ${PSQL_ARGS} --dbname=postgres -c "CREATE USER ${KEYCLOAK_DB_USER} WITH ENCRYPTED PASSWORD '${KEYCLOAK_DB_PASSWORD}';"
     fi
     echo ""
-    psql ${PSQL_ARGS} --dbname=postgres -c "GRANT ${KEYCLOAK_DB_USER} TO postgres;"
+    psql ${PSQL_ARGS} --dbname=postgres -c "GRANT ${KEYCLOAK_DB_USER} TO ${POSTGRES_USER};"
 
     echo "Ensure keycloak db database exists"
     if ! check_db_exists ${KEYCLOAK_DB_NAME}; then
