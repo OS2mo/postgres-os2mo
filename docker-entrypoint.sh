@@ -12,13 +12,17 @@ if [ -z "${POSTGRES_USER}" ]; then
     echo "'POSTGRES_USER' not set, defaulting to 'postgres'"
     POSTGRES_USER=postgres
 fi
+if [ -z "${POSTGRES_USER_SUFFIX}" ]; then
+    echo "'POSTGRES_USER_SUFFIX' not set, defaulting to ''"
+    POSTGRES_USER_SUFFIX=''
+fi
 echo ""
 export PGPASSWORD=${POSTGRES_PASSWORD}
 
 PSQL_ARGS=''
 PSQL_ARGS="${PSQL_ARGS} --host=${POSTGRES_HOST}"
 PSQL_ARGS="${PSQL_ARGS} --port=${POSTGRES_PORT}"
-PSQL_ARGS="${PSQL_ARGS} --username=${POSTGRES_USER}"
+PSQL_ARGS="${PSQL_ARGS} --username=${POSTGRES_USER}${POSTGRES_USER_SUFFIX}"
 PSQL_ARGS="${PSQL_ARGS} -v ON_ERROR_STOP=1"
 if [ -n "${POSTGRES_SSL}" ]; then
     PSQL_ARGS="${PSQL_ARGS} --set=sslmode=${POSTGRES_SSL}"

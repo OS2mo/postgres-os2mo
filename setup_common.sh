@@ -3,7 +3,7 @@ set -e
 
 check_postgres_connection() {
     echo -e "Waiting for Postgres to be ready\c"
-    until pg_isready -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} >/dev/null; do echo -e ".\c"; sleep 1; done
+    until pg_isready -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER}${POSTGRES_USER_SUFFIX} >/dev/null; do echo -e ".\c"; sleep 1; done
     echo " OK"
     echo ""
 
