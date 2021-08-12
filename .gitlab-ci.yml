@@ -16,7 +16,9 @@
 # RELEASE_REGISTRY_PASSWORD
 
 stages:
-  - lint-build
+  - lint
+  - build-base
+  - build
   - test
   - release
   - deploy
@@ -24,17 +26,20 @@ stages:
 variables:
   # Project variables
   RELEASE_REGISTRY: docker.io
-  RELEASE_REGISTRY_IMAGE: index.docker.io/magentaaps/postgres-os2mo
-
   IMAGE_SHA_BASE: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}
-  IMAGE_TAG_BASE: ${RELEASE_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+
+  OS2MO_RELEASE_REGISTRY_IMAGE: index.docker.io/magentaaps/postgres-os2mo
+  OS2MO_IMAGE_TAG_BASE: ${OS2MO_RELEASE_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+
+  KEYCLOAK_RELEASE_REGISTRY_IMAGE: index.docker.io/magentaaps/postgres-keycloak-init
+  KEYCLOAK_IMAGE_TAG_BASE: ${KEYCLOAK_RELEASE_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
 
 
 # Lint stage
 ############
 
 Lint Dockerfile:
-  stage: lint-build
+  stage: lint
   image: hadolint/hadolint:latest-alpine
   needs: []
   before_script:
@@ -48,11 +53,11 @@ Lint Dockerfile:
     - fd Dockerfile --exec hadolint
 
 
-# Build stage
-#############
+# Build-base stage
+##################
 
 .build_docker_base:
-  stage: lint-build
+  stage: build-base
   needs: []
   image:
     # We use the `:debug` image as it contains `sh` needed by gitlab-ci.
@@ -63,24 +68,74 @@ Lint Dockerfile:
   script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - cat postgres-versions.txt | xargs -I PGV sh -c '
-      echo "===== Building ${IMAGE_SHA_BASE}-PGV-${TARGET} =====";
+      echo "===== Building ${IMAGE_SHA_BASE}-base-${TARGET}-PGV =====";
       /kaniko/executor
       --context=${CI_PROJECT_DIR}
-      --dockerfile=${CI_PROJECT_DIR}/docker/Dockerfile
+      --dockerfile=${CI_PROJECT_DIR}/docker/Dockerfile.base
       --target=${TARGET}
       --build-arg POSTGRES_VERSION=PGV
-      --destination=${IMAGE_SHA_BASE}-PGV-${TARGET}
+      --destination=${IMAGE_SHA_BASE}-base-${TARGET}-PGV
       --cache=true
       '
 
-Build production image:
+Build base production image:
   extends: .build_docker_base
   before_script:
     - export TARGET="production"
 
-Build test image:
+Build base test image:
   extends: .build_docker_base
   before_script:
+    - export TARGET="test"
+
+# Build stage
+#############
+
+.build_docker_image:
+  stage: build
+  extends: .build_docker_base
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - cat postgres-versions.txt | xargs -I PGV sh -c '
+      echo "===== Building ${IMAGE_SHA_BASE}-${TYPE}-${TARGET}-PGV =====";
+      /kaniko/executor
+      --context=${CI_PROJECT_DIR}
+      --dockerfile=${CI_PROJECT_DIR}/docker/Dockerfile.${TYPE}
+      --build-arg BASE_IMAGE=${IMAGE_SHA_BASE}-base-${TARGET}-PGV
+      --destination=${IMAGE_SHA_BASE}-${TYPE}-${TARGET}-PGV
+      --cache=true
+      '
+
+Build OS2mo production image:
+  extends: .build_docker_image
+  needs:
+    - Build base production image
+  before_script:
+    - export TYPE="mox"
+    - export TARGET="production"
+
+Build OS2mo test image:
+  extends: .build_docker_image
+  needs:
+    - Build base test image
+  before_script:
+    - export TYPE="mox"
+    - export TARGET="test"
+
+Build Keycloak production image:
+  extends: .build_docker_image
+  needs:
+    - Build base production image
+  before_script:
+    - export TYPE="keycloak"
+    - export TARGET="production"
+
+Build Keycloak test image:
+  extends: .build_docker_image
+  needs:
+    - Build base test image
+  before_script:
+    - export TYPE="keycloak"
     - export TARGET="test"
 
 # Release stage
@@ -90,32 +145,56 @@ Build test image:
   stage: release
   needs:
     - Lint Dockerfile
-    - Build production image
-    - Build test image
+    - Build OS2mo production image
+    - Build OS2mo test image
+    - Build Keycloak production image
+    - Build Keycloak test image
   image: alpine
   tags:
     - docker
   before_script:
     - apk add skopeo
 
-Release master:
+Release OS2mo master:
   extends: .release-default
   rules:
     - if: $CI_COMMIT_TAG
   script:
     - cat postgres-versions.txt | xargs -I PGV sh -c '
-      echo "===== Tagging ${IMAGE_TAG_BASE}-PGV =====";
+      echo "===== Tagging ${OS2MO_IMAGE_TAG_BASE}-mox-PGV =====";
       skopeo copy
       --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
       --dest-creds=${RELEASE_REGISTRY_USER}:${RELEASE_REGISTRY_PASSWORD}
-      "docker://${IMAGE_SHA_BASE}-PGV-production"
-      "docker://${IMAGE_TAG_BASE}-PGV"
+      "docker://${IMAGE_SHA_BASE}-mox-production-PGV"
+      "docker://${OS2MO_IMAGE_TAG_BASE}-mox-PGV"
       '
     - cat postgres-versions.txt | xargs -I PGV sh -c '
-      echo "===== Tagging ${IMAGE_TAG_BASE}-PGV-test =====";
+      echo "===== Tagging ${OS2MO_IMAGE_TAG_BASE}-mox-test-PGV =====";
       skopeo copy
       --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
       --dest-creds=${RELEASE_REGISTRY_USER}:${RELEASE_REGISTRY_PASSWORD}
-      "docker://${IMAGE_SHA_BASE}-PGV-test"
-      "docker://${IMAGE_TAG_BASE}-PGV-test"
+      "docker://${IMAGE_SHA_BASE}-mox-test-PGV"
+      "docker://${OS2MO_IMAGE_TAG_BASE}-mox-test-PGC"
+      '
+
+Release Keycloak master:
+  extends: .release-default
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - cat postgres-versions.txt | xargs -I PGV sh -c '
+      echo "===== Tagging ${KEYCLOAK_IMAGE_TAG_BASE}-keycloak-PGV =====";
+      skopeo copy
+      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      --dest-creds=${RELEASE_REGISTRY_USER}:${RELEASE_REGISTRY_PASSWORD}
+      "docker://${IMAGE_SHA_BASE}-keycloak-production-PGV"
+      "docker://${KEYCLOAK_IMAGE_TAG_BASE}-keycloak-PGV"
+      '
+    - cat postgres-versions.txt | xargs -I PGV sh -c '
+      echo "===== Tagging ${KEYCLOAK_IMAGE_TAG_BASE}-keycloak-test-PGV =====";
+      skopeo copy
+      --src-creds=${CI_REGISTRY_USER}:${CI_BUILD_TOKEN}
+      --dest-creds=${RELEASE_REGISTRY_USER}:${RELEASE_REGISTRY_PASSWORD}
+      "docker://${IMAGE_SHA_BASE}-keycloak-test-PGV"
+      "docker://${KEYCLOAK_IMAGE_TAG_BASE}-keycloak-test-PGV"
       '

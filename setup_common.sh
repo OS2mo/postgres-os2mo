@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
+make_user_superuser() {
+    psql ${PSQL_ARGS} --dbname postgres -c "ALTER ROLE $1 WITH SUPERUSER;"
+}
+
+update_user_password() {
+    if [ -n "$1" ]; then
+        psql ${PSQL_ARGS} --dbname postgres -c "ALTER USER $2 WITH ENCRYPTED PASSWORD '$3'"
+    fi
+}
+
 check_postgres_connection() {
     echo -e "Waiting for Postgres to be ready\c"
     until pg_isready -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER}${POSTGRES_USER_SUFFIX} >/dev/null; do echo -e ".\c"; sleep 1; done

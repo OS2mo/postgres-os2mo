@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-check_lora_variables() {
-    if [ -n "$DB_NAME" ]; then
-        true "${DB_USER:?DB_USER is unset. Error.}"
-        true "${DB_PASSWORD:?DB_PASSWORD is unset. Error.}"
-    fi
+check_variables() {
+    true "${DB_NAME:?DB_NAME is unset. Error.}"
+    true "${DB_USER:?DB_USER is unset. Error.}"
+    true "${DB_PASSWORD:?DB_PASSWORD is unset. Error.}"
 }
 
 setup_lora_db() {
@@ -50,7 +49,7 @@ setup_lora_db() {
     echo ""
 }
 
-ensure_lora_db() {
+ensure_db() {
     if [ -n "$DB_NAME" ]; then
         echo "Starting LoRa database configuration."
         setup_lora_db
@@ -58,4 +57,17 @@ ensure_lora_db() {
         echo "Skipping creation of LoRA database configuration."
     fi
     echo ""
+}
+
+update_password() {
+    update_user_password "$DB_NAME" "$DB_USER" "$DB_PASSWORD"
+}
+
+make_superuser() {
+    if [ -n "${MAKE_SUPERUSER}" ]; then
+        echo ""
+        echo "Warning: Upgrading ${DB_USER} to SUPERUSER."
+        echo ""
+        make_user_superuser ${DB_USER}
+    fi
 }

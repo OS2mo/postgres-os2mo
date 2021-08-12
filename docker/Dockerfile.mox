@@ -1,0 +1,9 @@
+ARG BASE_IMAGE
+
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.title="Postgres OS2mo Init Container"
+LABEL org.opencontainers.image.description="A docker image containing Postgres initializer code for OS2mo needs."
+
+COPY setup_lora.sh /usr/local/bin/setup_db.sh
