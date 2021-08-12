@@ -1,0 +1,9 @@
+ARG BASE_IMAGE
+
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.title="Postgres Keycloak Init Container"
+LABEL org.opencontainers.image.description="A docker image containing Postgres initializer code for Keycloak needs."
+
+COPY setup_keycloak.sh /usr/local/bin/setup_db.sh

@@ -29,11 +29,11 @@ if [ -n "${POSTGRES_SSL}" ]; then
 fi
 
 source /usr/local/bin/setup_common.sh
-source /usr/local/bin/setup_lora.sh
+source /usr/local/bin/setup_db.sh
 
 # Check database specific configurations
 echo "Checking database configuration variables"
-check_lora_variables
+check_variables
 echo ""
 
 # Check postgres connection
@@ -41,27 +41,13 @@ check_postgres_connection
 
 # Check database configuration
 echo "Ensuring databases exist"
-ensure_lora_db
+ensure_db
 echo ""
 
-# Update passwords
-update_password() {
-    if [ -n "$1" ]; then
-        psql ${PSQL_ARGS} --dbname postgres -c "ALTER USER $2 WITH ENCRYPTED PASSWORD '$3'"
-    fi
-}
 echo "Updating passwords"
-update_password "$DB_NAME" "$DB_USER" "$DB_PASSWORD"
+update_password 
 echo ""
 
-# Update mox user to superuser
-make_superuser() {
-    psql ${PSQL_ARGS} --dbname postgres -c "ALTER ROLE $1 WITH SUPERUSER;"
-}
-
-if [ -n "${DB_SUPERUSER}" ]; then
-    echo ""
-    echo "Warning: Upgrading ${DB_USER} to SUPERUSER."
-    echo ""
-    make_superuser ${DB_USER}
-fi
+echo "Granting superuser rights"
+make_superuser
+echo ""
