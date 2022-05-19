@@ -23,12 +23,11 @@ setup_lora_db() {
     echo "Ensure LoRa database exists"
     if ! check_db_exists ${DB_NAME}; then
         echo "LoRa database does not exist, creating:"
-        psql ${PSQL_ARGS} --dbname=postgres -c "CREATE DATABASE ${DB_NAME};"
+        psql ${PSQL_ARGS} --dbname=postgres -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};"
     fi
     echo ""
 
-    echo "Setting up LoRa database privileges and settings:"
-    psql ${PSQL_ARGS} --dbname=postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};"
+    echo "Setting up LoRa database settings:"
     psql ${PSQL_ARGS} --dbname=postgres -c "ALTER DATABASE ${DB_NAME} SET search_path TO actual_state, public;"
     psql ${PSQL_ARGS} --dbname=postgres -c "ALTER DATABASE ${DB_NAME} SET datestyle TO 'ISO, YMD';"
     psql ${PSQL_ARGS} --dbname=postgres -c "ALTER DATABASE ${DB_NAME} SET intervalstyle TO 'sql_standard';"
