@@ -63,8 +63,6 @@ Lint Dockerfile:
     # We use the `:debug` image as it contains `sh` needed by gitlab-ci.
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
-  tags:
-    - docker
   script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - cat postgres-versions.txt | xargs -I PGV sh -c '
@@ -150,8 +148,6 @@ Build Keycloak test image:
     - Build Keycloak production image
     - Build Keycloak test image
   image: alpine
-  tags:
-    - docker
   before_script:
     - apk add skopeo
 
